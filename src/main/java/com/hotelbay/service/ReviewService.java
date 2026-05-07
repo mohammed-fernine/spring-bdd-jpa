@@ -1,93 +1,74 @@
 package com.hotelbay.service;
 
 import com.hotelbay.entity.Review;
+import com.hotelbay.repository.ReviewRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ReviewService {
-    private final Map<Long, Review> reviews = new HashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final ReviewRepository reviewRepository;
+
+    public ReviewService(ReviewRepository reviewRepository) {
+        this.reviewRepository = reviewRepository;
+    }
 
     public Review save(Review review) {
-        if (review.getId() == null) {
-            review.setId(idGenerator.getAndIncrement());
-        }
-        reviews.put(review.getId(), review);
-        return review;
+        return reviewRepository.save(review);
     }
 
     public Optional<Review> findById(Long id) {
-        return Optional.ofNullable(reviews.get(id));
+        return reviewRepository.findById(id);
     }
 
     public List<Review> findAll() {
-        return new ArrayList<>(reviews.values());
+        return reviewRepository.findAll();
     }
 
     public List<Review> findByHotelId(Long hotelId) {
-        return reviews.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId))
-                .toList();
+        return reviewRepository.findByHotelId(hotelId);
     }
 
     public List<Review> findByGuestId(Long guestId) {
-        return reviews.values().stream()
-                .filter(r -> r.getGuest() != null && r.getGuest().getId().equals(guestId))
-                .toList();
+        return reviewRepository.findByGuestId(guestId);
     }
 
     public List<Review> findByReservationId(Long reservationId) {
-        return reviews.values().stream()
-                .filter(r -> r.getReservation() != null && r.getReservation().getId().equals(reservationId))
-                .toList();
+        return reviewRepository.findByReservationId(reservationId);
     }
 
     public List<Review> findByHotelAndGuest(Long hotelId, Long guestId) {
-        return reviews.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId) &&
-                            r.getGuest() != null && r.getGuest().getId().equals(guestId))
-                .toList();
+        return reviewRepository.findByHotelIdAndGuestId(hotelId, guestId);
     }
 
     public Double findAverageRatingByHotel(Long hotelId) {
-        return reviews.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId))
-                .mapToInt(Review::getRating)
-                .average()
-                .orElse(0.0);
+        Double average = reviewRepository.findAverageRatingByHotel(hotelId);
+        return average != null ? average : 0.0;
     }
 
     public Long countReviewsByHotel(Long hotelId) {
-        return reviews.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId))
-                .count();
+        return reviewRepository.countByHotelId(hotelId);
     }
 
     public List<Review> findByHotelOrderByRatingDesc(Long hotelId) {
-        return reviews.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId))
-                .sorted((r1, r2) -> Integer.compare(r2.getRating(), r1.getRating()))
-                .toList();
+        return reviewRepository.findByHotelIdOrderByRatingDesc(hotelId);
     }
 
     public List<Review> findByRatingRange(Integer minRating, Integer maxRating) {
-        return reviews.values().stream()
-                .filter(r -> r.getRating() >= minRating && r.getRating() <= maxRating)
-                .toList();
+        return reviewRepository.findByRatingBetween(minRating, maxRating);
     }
 
     public boolean existsById(Long id) {
-        return reviews.containsKey(id);
+        return reviewRepository.existsById(id);
     }
 
     public void deleteById(Long id) {
-        reviews.remove(id);
+        reviewRepository.deleteById(id);
     }
 
     public void deleteAll() {
-        reviews.clear();
+        reviewRepository.deleteAll();
     }
 }

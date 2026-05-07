@@ -1,87 +1,73 @@
 package com.hotelbay.service;
 
 import com.hotelbay.entity.Reservation;
+import com.hotelbay.repository.ReservationRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ReservationService {
-    private final Map<Long, Reservation> reservations = new HashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final ReservationRepository reservationRepository;
+
+    public ReservationService(ReservationRepository reservationRepository) {
+        this.reservationRepository = reservationRepository;
+    }
 
     public Reservation save(Reservation reservation) {
-        if (reservation.getId() == null) {
-            reservation.setId(idGenerator.getAndIncrement());
-        }
-        reservations.put(reservation.getId(), reservation);
-        return reservation;
+        return reservationRepository.save(reservation);
     }
 
     public Optional<Reservation> findById(Long id) {
-        return Optional.ofNullable(reservations.get(id));
+        return reservationRepository.findById(id);
     }
 
     public List<Reservation> findAll() {
-        return new ArrayList<>(reservations.values());
+        return reservationRepository.findAll();
     }
 
     public List<Reservation> findByGuestId(Long guestId) {
-        return reservations.values().stream()
-                .filter(r -> r.getGuest() != null && r.getGuest().getId().equals(guestId))
-                .toList();
+        return reservationRepository.findByGuestId(guestId);
     }
 
     public List<Reservation> findByHotelId(Long hotelId) {
-        return reservations.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId))
-                .toList();
+        return reservationRepository.findByHotelId(hotelId);
     }
 
     public List<Reservation> findByRoomId(Long roomId) {
-        return reservations.values().stream()
-                .filter(r -> r.getRoom() != null && r.getRoom().getId().equals(roomId))
-                .toList();
+        return reservationRepository.findByRoomId(roomId);
     }
 
     public List<Reservation> findByStatus(Reservation.ReservationStatus status) {
-        return reservations.values().stream()
-                .filter(r -> r.getStatus() == status)
-                .toList();
+        return reservationRepository.findByStatus(status);
     }
 
     public List<Reservation> findByGuestAndStatus(Long guestId, Reservation.ReservationStatus status) {
-        return reservations.values().stream()
-                .filter(r -> r.getGuest() != null && r.getGuest().getId().equals(guestId) && r.getStatus() == status)
-                .toList();
+        return reservationRepository.findByGuestIdAndStatus(guestId, status);
     }
 
     public List<Reservation> findByHotelAndStatus(Long hotelId, Reservation.ReservationStatus status) {
-        return reservations.values().stream()
-                .filter(r -> r.getHotel() != null && r.getHotel().getId().equals(hotelId) && r.getStatus() == status)
-                .toList();
+        return reservationRepository.findByHotelIdAndStatus(hotelId, status);
     }
 
     public List<Reservation> findConflictingReservations(Long roomId, LocalDate checkIn, LocalDate checkOut) {
-        return reservations.values().stream()
-                .filter(r -> r.getRoom() != null && r.getRoom().getId().equals(roomId) &&
-                            r.getStatus() != Reservation.ReservationStatus.CANCELED &&
-                            ((checkIn.isBefore(r.getCheckOutDate()) && checkOut.isAfter(r.getCheckInDate())) ||
-                             (checkIn.isEqual(r.getCheckInDate()) || checkOut.isEqual(r.getCheckOutDate()))))
+        List<Reservation> reservations = reservationRepository.findConflictingReservations(roomId, checkIn, checkOut);
+        return reservations.stream()
+                .filter(r -> r.getStatus() != Reservation.ReservationStatus.CANCELED)
                 .toList();
     }
 
     public boolean existsById(Long id) {
-        return reservations.containsKey(id);
+        return reservationRepository.existsById(id);
     }
 
     public void deleteById(Long id) {
-        reservations.remove(id);
+        reservationRepository.deleteById(id);
     }
 
     public void deleteAll() {
-        reservations.clear();
+        reservationRepository.deleteAll();
     }
 }

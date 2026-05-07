@@ -1,52 +1,45 @@
 package com.hotelbay.service;
 
 import com.hotelbay.entity.Hotel;
+import com.hotelbay.repository.HotelRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class HotelService {
-    private final Map<Long, Hotel> hotels = new HashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final HotelRepository hotelRepository;
+
+    public HotelService(HotelRepository hotelRepository) {
+        this.hotelRepository = hotelRepository;
+    }
 
     public Hotel save(Hotel hotel) {
-        if (hotel.getId() == null) {
-            hotel.setId(idGenerator.getAndIncrement());
-        }
-        hotels.put(hotel.getId(), hotel);
-        return hotel;
+        return hotelRepository.save(hotel);
     }
 
     public Optional<Hotel> findById(Long id) {
-        return Optional.ofNullable(hotels.get(id));
+        return hotelRepository.findById(id);
     }
 
     public List<Hotel> findAll() {
-        return new ArrayList<>(hotels.values());
+        return hotelRepository.findAll();
     }
 
     public List<Hotel> findByActive(boolean active) {
-        List<Hotel> result = new ArrayList<>();
-        for (Hotel hotel : hotels.values()) {
-            if (hotel.getActive() == active) {
-                result.add(hotel);
-            }
-        }
-        return result;
+        return hotelRepository.findByActive(active);
     }
 
     public boolean existsById(Long id) {
-        return hotels.containsKey(id);
+        return hotelRepository.existsById(id);
     }
 
     public void deleteById(Long id) {
-        hotels.remove(id);
+        hotelRepository.deleteById(id);
     }
 
     public void deleteAll() {
-        hotels.clear();
+        hotelRepository.deleteAll();
     }
 }

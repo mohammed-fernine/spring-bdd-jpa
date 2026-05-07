@@ -1,13 +1,30 @@
 package com.hotelbay.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "hotels")
 public class Hotel {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String description;
     private String location;
     private String contactInfo;
     private Boolean active;
+
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Review> reviews = new ArrayList<>();
+
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Room> rooms = new ArrayList<>();
 
     public Hotel() {
     }
@@ -64,5 +81,13 @@ public class Hotel {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public List<Review> getReviews() {
+        return reviews;
+    }
+
+    public void setReviews(List<Review> reviews) {
+        this.reviews = reviews;
     }
 }

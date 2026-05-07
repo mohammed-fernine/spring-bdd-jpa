@@ -64,7 +64,7 @@ public class RefundManagementSteps {
         testPayment = new Payment();
         testPayment.setReservation(testReservation);
         testPayment.setAmount(BigDecimal.valueOf(300.00));
-        testPayment.setStatus(Payment.PaymentStatus.PENDING);
+        testPayment.setStatus(Payment.PaymentStatus.COMPLETED);
         testPayment = paymentService.save(testPayment);
     }
 

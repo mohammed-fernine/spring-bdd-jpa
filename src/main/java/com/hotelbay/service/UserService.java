@@ -1,77 +1,57 @@
 package com.hotelbay.service;
 
 import com.hotelbay.entity.User;
+import com.hotelbay.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
-    private final Map<Long, User> users = new HashMap<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     public User save(User user) {
-        if (user.getId() == null) {
-            user.setId(idGenerator.getAndIncrement());
-        }
-        users.put(user.getId(), user);
-        return user;
+        return userRepository.save(user);
     }
 
     public Optional<User> findById(Long id) {
-        return Optional.ofNullable(users.get(id));
+        return userRepository.findById(id);
     }
 
     public Optional<User> findByUsername(String username) {
-        for (User user : users.values()) {
-            if (user.getUsername().equals(username)) {
-                return Optional.of(user);
-            }
-        }
-        return Optional.empty();
+        return Optional.ofNullable(userRepository.findByUsername(username));
     }
 
     public Optional<User> findByEmail(String email) {
-        for (User user : users.values()) {
-            if (user.getEmail().equals(email)) {
-                return Optional.of(user);
-            }
-        }
-        return Optional.empty();
+        return Optional.ofNullable(userRepository.findByEmail(email));
     }
 
     public List<User> findAll() {
-        return new ArrayList<>(users.values());
+        return userRepository.findAll();
     }
 
     public boolean existsById(Long id) {
-        return users.containsKey(id);
+        return userRepository.existsById(id);
     }
 
     public boolean existsByUsername(String username) {
-        for (User user : users.values()) {
-            if (user.getUsername().equals(username)) {
-                return true;
-            }
-        }
-        return false;
+        return userRepository.existsByUsername(username);
     }
 
     public boolean existsByEmail(String email) {
-        for (User user : users.values()) {
-            if (user.getEmail().equals(email)) {
-                return true;
-            }
-        }
-        return false;
+        return userRepository.existsByEmail(email);
     }
 
     public void deleteById(Long id) {
-        users.remove(id);
+        userRepository.deleteById(id);
     }
 
     public void deleteAll() {
-        users.clear();
+        userRepository.deleteAll();
     }
 }
