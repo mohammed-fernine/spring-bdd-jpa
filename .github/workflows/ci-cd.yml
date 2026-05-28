@@ -7,7 +7,7 @@ on:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/hotelbay
-  DEPLOY_HOST: deves.xdi.uevora.pt
+  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
   DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
   APP_PORT: ${{ vars.APP_PORT || '8080' }}
   DB_NAME: ${{ vars.DB_NAME || 'hotelbay' }}
@@ -89,7 +89,7 @@ jobs:
         with:
           host: ${{ env.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
           port: ${{ env.DEPLOY_PORT }}
           script: |
             # Pull the latest image
