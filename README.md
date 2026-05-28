@@ -2,6 +2,55 @@
 
 A Spring Boot RESTful API for hotel management, built with Spring Data JPA, PostgreSQL, and tested using BDD with Cucumber.
 
+## Technology Stack
+
+- **Java 17**
+- **Spring Boot 3.2.5**
+- **Spring Data JPA** with PostgreSQL 16
+- **Maven** for build and dependency management
+- **Cucumber 7.14** for BDD testing (H2 in-memory database)
+- **Docker & Docker Compose** for containerization
+- **GitHub Actions** for CI/CD
+
+## Project Structure
+
+```
+spring-bdd-jpa/
+├── .github/workflows/ci-cd.yml   # CI/CD pipeline definition
+├── src/
+│   ├── main/
+│   │   ├── java/com/hotelbay/
+│   │   │   ├── controller/       # REST controllers
+│   │   │   ├── entity/           # JPA entities
+│   │   │   ├── repository/       # Spring Data repositories
+│   │   │   ├── service/          # Business logic
+│   │   │   └── HotelBayApplication.java
+│   │   └── resources/
+│   │       └── application.properties
+│   └── test/
+│       ├── java/com/hotelbay/    # Cucumber step definitions
+│       └── resources/
+│           ├── application-test.properties
+│           └── features/         # Cucumber .feature files
+├── Dockerfile                    # Multi-stage Docker build
+├── docker-compose.yml            # Local development setup
+├── pom.xml                       # Maven configuration
+└── README.md
+```
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/api/hotels` | Hotel management |
+| `/api/rooms` | Room management |
+| `/api/room-categories` | Room category management |
+| `/api/rooms/search` | Room search |
+| `/api/reservations` | Reservation management |
+| `/api/payments` | Payment management |
+| `/api/reviews` | Review management |
+| `/api/users` | User management |
+
 ## Prerequisites
 
 - **Docker** (v20.10+)
@@ -9,65 +58,58 @@ A Spring Boot RESTful API for hotel management, built with Spring Data JPA, Post
 
 ## Running the Service with Docker Compose
 
-Start all services with a single command:
+Start all services:
 
 ```bash
 docker-compose up
 ```
 
-To run in detached (background) mode:
+Run in detached (background) mode:
 
 ```bash
 docker-compose up -d
 ```
 
-To stop the services:
+Stop the services:
 
 ```bash
 docker-compose down
 ```
 
-To stop the services and remove the database volume:
+Stop and remove the database volume:
 
 ```bash
 docker-compose down -v
 ```
 
-The API will be available at: **http://localhost:8080**
+The API will be available at **http://localhost:8080**.
 
 ## Docker Compose Structure
 
-The `docker-compose.yml` file defines the following services:
-
-### Services
-
-| Service | Image | Description |
-|---------|-------|-------------|
-| `db` | `postgres:16-alpine` | PostgreSQL 16 database server |
-| `app` | Built from `Dockerfile` | Spring Boot application |
+The `docker-compose.yml` defines two services:
 
 ### Service: `db` (PostgreSQL Database)
 
 - **Image:** `postgres:16-alpine`
 - **Container name:** `hotelbay-db`
-- **Port mapping:** `5432:5432`
-- **Environment variables:**
-  - `POSTGRES_DB=hotelbay` — database name
-  - `POSTGRES_USER=postgres` — database user
-  - `POSTGRES_PASSWORD=password` — database password
-- **Volume:** `pgdata` — persists database data across container restarts
-- **Health check:** Uses `pg_isready` to verify the database is accepting connections
+- **Port:** `5432:5432`
+- **Environment:**
+  - `POSTGRES_DB=hotelbay`
+  - `POSTGRES_USER=postgres`
+  - `POSTGRES_PASSWORD=password`
+- **Volume:** `pgdata` — persistent database storage
+- **Health check:** `pg_isready` verifies the database is accepting connections
 
 ### Service: `app` (Spring Boot Application)
 
-- **Build:** Uses the multi-stage `Dockerfile` in the project root
+- **Build:** Multi-stage `Dockerfile`
 - **Container name:** `hotelbay-app`
-- **Port mapping:** `8080:8080`
-- **Environment variables:**
-  - `SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hotelbay` — JDBC connection to the `db` service
-  - `SPRING_DATASOURCE_USERNAME=postgres` — database user
-  - `SPRING_DATASOURCE_PASSWORD=password` — database password
-- **Depends on:** `db` (waits until the database health check passes)
+- **Port:** `8080:8080`
+- **Environment:**
+  - `SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/hotelbay`
+  - `SPRING_DATASOURCE_USERNAME=postgres`
+  - `SPRING_DATASOURCE_PASSWORD=password`
+- **Depends on:** `db` — waits until the database health check passes
 
 ### Volumes
 
@@ -75,63 +117,59 @@ The `docker-compose.yml` file defines the following services:
 |--------|---------|
 | `pgdata` | Persistent storage for PostgreSQL data |
 
-## Dockerfile Structure
+## Dockerfile
 
-The `Dockerfile` uses a multi-stage build:
+The `Dockerfile` uses a **multi-stage build**:
 
-1. **Build stage** (`maven:3.9-eclipse-temurin-17`): Compiles the application and packages it into a JAR file.
-2. **Runtime stage** (`eclipse-temurin:17-jre`): Runs the application with a minimal JRE image.
+1. **Build stage** (`maven:3.9-eclipse-temurin-17`) — compiles the source code and packages it into a JAR
+2. **Runtime stage** (`eclipse-temurin:17-jre`) — runs the application with a minimal JRE image (~300MB vs ~800MB with full JDK)
 
 ## CI/CD Pipeline
 
-The project includes a fully automated CI/CD pipeline implemented with **GitHub Actions**. The pipeline is triggered on every push to the `master` branch.
+The project includes a fully automated CI/CD pipeline implemented with **GitHub Actions**, defined in `.github/workflows/ci-cd.yml`. The pipeline is triggered on every push to the `main` branch.
 
 ### Pipeline Stages
 
-The pipeline consists of three sequential jobs:
-
 ```
-Push to master → Build & Test → Build & Publish Docker Image → Deploy to Server
+Push to main → Build & Test → Build & Publish Docker Image → Deploy to Server
 ```
 
 #### 1. Build & Test
 
-- Checks out the source code
-- Sets up JDK 17 (Temurin) with Maven caching
-- Starts a PostgreSQL 16 service container for integration tests
+- Sets up JDK 17 (Temurin) with Maven dependency caching
 - **Builds** the project (`mvn clean compile`)
-- **Runs all tests** (`mvn test`) — including unit tests and Cucumber BDD tests
+- **Runs all tests** (`mvn test`) — Cucumber BDD tests use H2 in-memory database
 - **Packages** the application into a JAR (`mvn package`)
-- Uploads the JAR artifact for reference
+- Uploads the JAR as a build artifact
 
 #### 2. Build & Publish Docker Image
 
 - Builds the Docker image using the multi-stage `Dockerfile`
 - Pushes the image to **Docker Hub** with two tags:
   - `latest` — always points to the most recent build
-  - `<commit-sha>` — for traceability and rollback
+  - `<commit-sha>` — for version traceability and rollback
 
 #### 3. Deploy to Server
 
-- Connects via **SSH** to `deves.xdi.uevora.pt`
+- Connects via **SSH** (password authentication) to the deployment server
 - Pulls the latest Docker image from Docker Hub
 - Stops and removes any existing containers
 - Creates a Docker network (`hotelbay-net`)
-- Starts PostgreSQL and the application containers
-- The application is accessible on the configured port
+- Starts PostgreSQL and the application containers with `--restart unless-stopped`
 
 ### Pipeline Configuration
 
-The pipeline is parameterized using **GitHub Secrets** and **Repository Variables**.
+The pipeline is fully parameterized using **GitHub Repository Secrets** and **Variables**.
 
-#### Required Secrets (Settings → Secrets and variables → Actions → Secrets)
+#### Required Secrets (Settings → Secrets and variables → Actions)
 
 | Secret | Description |
 |--------|-------------|
 | `DOCKERHUB_USERNAME` | Docker Hub username |
-| `DOCKERHUB_TOKEN` | Docker Hub access token (not password) |
+| `DOCKERHUB_TOKEN` | Docker Hub access token |
+| `DEPLOY_HOST` | Deployment server hostname |
 | `DEPLOY_USER` | SSH username for the deployment server |
-| `DEPLOY_SSH_KEY` | Private SSH key for authentication to the server |
+| `DEPLOY_PASSWORD` | SSH password for the deployment server |
 | `DB_PASSWORD` | Database password used in production |
 
 #### Optional Variables (Settings → Secrets and variables → Actions → Variables)
@@ -145,35 +183,18 @@ The pipeline is parameterized using **GitHub Secrets** and **Repository Variable
 
 ### How to Configure the Pipeline
 
-1. **Create a Docker Hub account** at [hub.docker.com](https://hub.docker.com) (if you don't have one)
+1. **Create a Docker Hub account** at [hub.docker.com](https://hub.docker.com)
 2. **Create a public repository** on Docker Hub named `hotelbay`
-3. **Generate a Docker Hub access token**: Account Settings → Security → New Access Token
-4. **Generate an SSH key pair** for deployment:
-   ```bash
-   ssh-keygen -t ed25519 -C "github-actions-deploy"
-   ```
-5. **Add the public key** to the deployment server's `~/.ssh/authorized_keys`
-6. **Add all secrets** to the GitHub repository under Settings → Secrets and variables → Actions
-7. **Push to master** — the pipeline will run automatically
+3. **Generate a Docker Hub access token:** Account Settings → Security → New Access Token
+4. **Add all secrets** to the GitHub repository under Settings → Secrets and variables → Actions
+5. **Push to main** — the pipeline runs automatically
 
 ### Design Decisions
 
-- **Multi-stage Docker build**: Keeps the final image small (~300MB vs ~800MB with full JDK)
-- **GitHub Actions cache**: Maven dependencies are cached between runs for faster builds
-- **Service containers**: PostgreSQL runs as a GitHub Actions service for realistic integration testing
-- **Image tagging with SHA**: Allows rollback to any previous version
-- **SSH deployment with `appleboy/ssh-action`**: Industry-standard approach for server deployment
-- **Parameterized configuration**: All sensitive data and environment-specific settings are externalized as secrets/variables
-- **Health checks**: PostgreSQL must pass health check before tests and deployment proceed
-- **`unless-stopped` restart policy**: Containers restart automatically after server reboot
-
-## Technology Stack
-
-- **Java 17**
-- **Spring Boot 3.2.5**
-- **Spring Data JPA**
-- **PostgreSQL 16**
-- **Maven**
-- **Cucumber** (BDD testing)
-- **Docker & Docker Compose**
-- **GitHub Actions** (CI/CD)
+- **Multi-stage Docker build** — keeps the final image lightweight
+- **Maven dependency caching** — speeds up CI builds
+- **H2 for testing** — tests run with an in-memory database, no external dependencies needed in CI
+- **Image tagging with commit SHA** — enables rollback to any previous version
+- **Password-based SSH deployment** — compatible with university server credentials
+- **Parameterized configuration** — all sensitive data and environment-specific settings are externalized as GitHub secrets/variables
+- **`unless-stopped` restart policy** — containers restart automatically after server reboot
