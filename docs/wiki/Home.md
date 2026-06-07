@@ -9,3 +9,11 @@ Welcome to the HotelBay project wiki. This wiki summarizes the behavior-driven (
 - Deployment: via Docker image + SSH to the university server
 
 For each domain area, you will find a page listing its scenarios and steps.
+
+## Team Members & Module Assignment
+
+| Student | Assigned Modules |
+|--------|-------------------|
+| Mohammed Fernine (68313) | Refund Management / Reviews and Ratings |
+| Filip Kafka | Booking Management / User Authentication / Payment Management |
+| Frank | Hotel Administration / Room Management / Room Category Management |
