@@ -4,7 +4,8 @@ param(
   [string]$AssigneeMapPath = "scripts/assignees.json",
   [string[]]$Labels = @("scenario","bdd"),
   [string]$FeaturesPath = "src/test/resources/features",
-  [switch]$DryRun
+  [switch]$DryRun,
+  [switch]$Unassigned
 )
 
 function Require-GhCli {
@@ -24,11 +25,10 @@ function New-Issue {
   )
   $labelArgs = @()
   foreach ($l in $Labels) { $labelArgs += @('--label', $l) }
-  if ($DryRun) {
-    Write-Host "[DRY RUN] gh issue create --repo $Repo --title $Title --assignee $Assignee --labels $($Labels -join ',')"
-  } else {
-    gh issue create --repo $Repo --title $Title --body $Body --assignee $Assignee @labelArgs | Write-Host
-  }
+  $args = @('issue','create','--repo', $Repo, '--title', $Title, '--body', $Body) + $labelArgs
+  if (-not [string]::IsNullOrWhiteSpace($Assignee)) { $args += @('--assignee', $Assignee) }
+  if ($DryRun) { Write-Host ("[DRY RUN] gh " + ($args -join ' ')) }
+  else { gh @args | Write-Host }
 }
 
 function Get-FeatureFiles {
@@ -121,6 +121,7 @@ foreach ($feat in $all) {
   $featureKey = Normalize $feat.Feature
   $assigneeForFeature = $DefaultAssignee
   if ($assigneeMap.ContainsKey($featureKey)) { $assigneeForFeature = $assigneeMap[$featureKey] }
+  if ($Unassigned) { $assigneeForFeature = $null }
   foreach ($sc in $feat.Scenarios) {
     $title = "${($feat.Feature)} — ${($sc.Name)}"
     $body = @()
