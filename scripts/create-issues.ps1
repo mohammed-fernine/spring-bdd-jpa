@@ -1,6 +1,7 @@
 param(
   [string]$Repo = "mohammed-fernine/spring-bdd-jpa",
-  [string]$Assignee = "@me",
+  [string]$DefaultAssignee = "@me",
+  [string]$AssigneeMapPath = "scripts/assignees.json",
   [string[]]$Labels = @("scenario","bdd"),
   [string]$FeaturesPath = "src/test/resources/features",
   [switch]$DryRun
@@ -40,6 +41,27 @@ function Slugify([string]$text) {
   $s = $text.ToLower()
   $s = ($s -replace "[^a-z0-9]+","-").Trim('-')
   return $s
+}
+
+function Normalize([string]$text) {
+  if ($null -eq $text) { return "" }
+  return ($text.ToLower().Trim())
+}
+
+function Load-AssigneeMap {
+  param([string]$Path)
+  $map = @{}
+  if ([string]::IsNullOrWhiteSpace($Path)) { return $map }
+  if (-not (Test-Path -LiteralPath $Path)) { return $map }
+  try {
+    $json = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json -AsHashtable
+    foreach ($k in $json.Keys) {
+      $map[(Normalize $k)] = [string]$json[$k]
+    }
+  } catch {
+    Write-Warning "Failed to parse assignee map at $Path: $_"
+  }
+  return $map
 }
 
 function Parse-FeatureFile {
@@ -84,10 +106,21 @@ $files = Get-FeatureFiles -Path $FeaturesPath
 $all = @()
 foreach ($f in $files) { $all += (Parse-FeatureFile -File $f.FullName) }
 
+$assigneeMap = Load-AssigneeMap -Path $AssigneeMapPath
+if ($assigneeMap.Count -gt 0) {
+  Write-Host "Loaded assignee map from $AssigneeMapPath:" -ForegroundColor Cyan
+  $assigneeMap.GetEnumerator() | ForEach-Object { Write-Host "  '" $_.Key "' -> '" $_.Value "'" }
+} else {
+  Write-Warning "No assignee map found. All issues will be assigned to $DefaultAssignee"
+}
+
 $created = 0
 foreach ($feat in $all) {
   $featureLabel = "feature:" + (Slugify $feat.Feature)
   $labels = $Labels + $featureLabel
+  $featureKey = Normalize $feat.Feature
+  $assigneeForFeature = $DefaultAssignee
+  if ($assigneeMap.ContainsKey($featureKey)) { $assigneeForFeature = $assigneeMap[$featureKey] }
   foreach ($sc in $feat.Scenarios) {
     $title = "${($feat.Feature)} — ${($sc.Name)}"
     $body = @()
@@ -105,7 +138,7 @@ foreach ($feat in $all) {
     }
     $body += "\n\n---\nGenerated from: ``$($feat.File)``"
     $bodyText = ($body -join "`n")
-    New-Issue -Repo $Repo -Title $title -Body $bodyText -Labels $labels -Assignee $Assignee
+    New-Issue -Repo $Repo -Title $title -Body $bodyText -Labels $labels -Assignee $assigneeForFeature
     $created++
   }
 }
