@@ -8,7 +8,7 @@ A Spring Boot RESTful API for hotel management, built with Spring Data JPA, Post
 - Uses PostgreSQL in prod and H2 for tests.
 - Dockerfile for the app and a simple docker-compose for local run.
 - CI/CD with GitHub Actions: build, test, build Docker image, push to Docker Hub, then deploy over SSH to the server.
-- Triggers on push to `main` or `master`.
+- Triggers on push to `master`.
 
 ## Technology Stack
 
@@ -134,12 +134,12 @@ The `Dockerfile` uses a **multi-stage build**:
 
 ## CI/CD Pipeline (short)
 
-There is a workflow in `.github/workflows/ci-cd.yml`. On push to `main` or `master` it will run all steps automatically.
+There is a workflow in `.github/workflows/ci-cd.yml`. On push to `master` it will run all steps automatically.
 
 ### Pipeline Stages
 
 ```
-Push to main → Build & Test → Build & Publish Docker Image → Deploy to Server
+Push to master → Build & Test → Build & Publish Docker Image → Deploy to Server
 ```
 
 #### 1. Build & Test
@@ -189,7 +189,7 @@ The pipeline is fully parameterized using **GitHub Repository Secrets** and **Va
 
 - Make a public Docker Hub repo called `hotelbay` (or use your own name, just update the image in the workflow if you change it).
 - Add the secrets shown above to the GitHub repo.
-- Push to `main` or `master` and the pipeline will do the rest.
+- Push to `master` and the pipeline will do the rest.
 
 Note: If your Docker Hub repo is private, keep `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` set so the remote can pull the image.
 
