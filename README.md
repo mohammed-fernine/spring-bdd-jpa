@@ -2,6 +2,15 @@
 
 A Spring Boot RESTful API for hotel management, built with Spring Data JPA, PostgreSQL, and tested using BDD with Cucumber.
 
+## Final Version Summary
+
+- **CI/CD**: GitHub Actions builds, tests, builds Docker image, pushes to Docker Hub, and deploys via SSH to the university server.
+- **Trigger**: On push to `main` or `master` branches.
+- **Deploy target**: `deves.xdi.uevora.pt` (configurable), app exposed on port `8080` by default.
+- **Secrets/Variables**: All credentials and ports are parameterized via GitHub Secrets and Variables (see tables below).
+- **Tests**: Cucumber BDD on H2 in-memory DB with the `test` profile.
+- **Docker**: Multi-stage Dockerfile; local development via Docker Compose.
+
 ## Technology Stack
 
 - **Java 17**
@@ -126,7 +135,7 @@ The `Dockerfile` uses a **multi-stage build**:
 
 ## CI/CD Pipeline
 
-The project includes a fully automated CI/CD pipeline implemented with **GitHub Actions**, defined in `.github/workflows/ci-cd.yml`. The pipeline is triggered on every push to the `main` branch.
+The project includes a fully automated CI/CD pipeline implemented with **GitHub Actions**, defined in `.github/workflows/ci-cd.yml`. The pipeline is triggered on every push to the `main` or `master` branches.
 
 ### Pipeline Stages
 
@@ -167,7 +176,6 @@ The pipeline is fully parameterized using **GitHub Repository Secrets** and **Va
 |--------|-------------|
 | `DOCKERHUB_USERNAME` | Docker Hub username |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `DEPLOY_HOST` | Deployment server hostname |
 | `DEPLOY_USER` | SSH username for the deployment server |
 | `DEPLOY_PASSWORD` | SSH password for the deployment server |
 | `DB_PASSWORD` | Database password used in production |
@@ -176,6 +184,7 @@ The pipeline is fully parameterized using **GitHub Repository Secrets** and **Va
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `DEPLOY_HOST` | `deves.xdi.uevora.pt` | Deployment server hostname |
 | `DEPLOY_PORT` | `22` | SSH port of the deployment server |
 | `APP_PORT` | `8080` | Port to expose the application on the server |
 | `DB_NAME` | `hotelbay` | PostgreSQL database name |
@@ -187,7 +196,9 @@ The pipeline is fully parameterized using **GitHub Repository Secrets** and **Va
 2. **Create a public repository** on Docker Hub named `hotelbay`
 3. **Generate a Docker Hub access token:** Account Settings → Security → New Access Token
 4. **Add all secrets** to the GitHub repository under Settings → Secrets and variables → Actions
-5. **Push to main** — the pipeline runs automatically
+5. **Push to main or master** — the pipeline runs automatically
+
+Note: If your Docker Hub repository is private, ensure `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are set; the pipeline performs a Docker login on the remote host before pulling the image.
 
 ### Design Decisions
 
