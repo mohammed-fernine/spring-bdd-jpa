@@ -84,12 +84,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Preflight - verify required secrets
-        run: |
-          test -n "${{ secrets.DEPLOY_USER }}" || (echo "Missing DEPLOY_USER secret" && exit 1)
-          test -n "${{ secrets.DEPLOY_PASSWORD }}" || (echo "Missing DEPLOY_PASSWORD secret" && exit 1)
-          test -n "${{ secrets.DB_PASSWORD }}" || (echo "Missing DB_PASSWORD secret" && exit 1)
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -103,26 +97,59 @@ jobs:
               echo "Docker is not installed on the server. Please install Docker and re-run." >&2
               exit 1
             fi
-            if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=; fi
+            PW='${{ secrets.DEPLOY_PASSWORD }}'
+            USE_DIRECT=0; USE_SUDO_NONINT=0; USE_SUDO_PASS=0
+            if docker info >/dev/null 2>&1; then
+              USE_DIRECT=1
+            elif command -v sudo >/dev/null 2>&1; then
+              if sudo -n docker info >/dev/null 2>&1; then
+                USE_SUDO_NONINT=1
+              elif [ -n "$PW" ] && echo "$PW" | sudo -S -k docker info >/dev/null 2>&1; then
+                USE_SUDO_PASS=1
+              else
+                echo "Docker requires elevated privileges; add the deploy user to the docker group or enable passwordless sudo for docker." >&2
+                exit 1
+              fi
+            else
+              echo "Docker not accessible and sudo not available on the server." >&2
+              exit 1
+            fi
+
+            dk() {
+              if [ "$USE_DIRECT" = "1" ]; then
+                docker "$@"
+              elif [ "$USE_SUDO_NONINT" = "1" ]; then
+                sudo -n docker "$@"
+              elif [ "$USE_SUDO_PASS" = "1" ]; then
+                echo "$PW" | sudo -S -k docker "$@"
+              else
+                echo "No docker execution method available" >&2
+                exit 1
+              fi
+            }
 
             # Login to Docker Hub if credentials are provided (safe if public too)
             if [ -n "${{ secrets.DOCKERHUB_USERNAME }}" ] && [ -n "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
               echo "Logging in to Docker Hub on remote host"
-              echo "${{ secrets.DOCKERHUB_TOKEN }}" | $SUDO docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || exit 1
+              if [ "$USE_SUDO_PASS" = "1" ]; then
+                printf "%s\n%s\n" "$PW" "${{ secrets.DOCKERHUB_TOKEN }}" | sudo -S -k docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || exit 1
+              else
+                echo "${{ secrets.DOCKERHUB_TOKEN }}" | dk login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin || exit 1
+              fi
             fi
 
             # Pull the latest image
-            $SUDO docker pull ${{ env.DOCKER_IMAGE }}:latest
+            dk pull ${{ env.DOCKER_IMAGE }}:latest
 
             # Stop and remove existing containers
-            $SUDO docker stop hotelbay-app hotelbay-db 2>/dev/null || true
-            $SUDO docker rm hotelbay-app hotelbay-db 2>/dev/null || true
+            dk stop hotelbay-app hotelbay-db 2>/dev/null || true
+            dk rm hotelbay-app hotelbay-db 2>/dev/null || true
 
             # Create network if it doesn't exist
-            $SUDO docker network create hotelbay-net 2>/dev/null || true
+            dk network create hotelbay-net 2>/dev/null || true
 
             # Start PostgreSQL
-            $SUDO docker run -d \
+            dk run -d \
               --name hotelbay-db \
               --network hotelbay-net \
               --restart unless-stopped \
@@ -136,7 +163,7 @@ jobs:
             sleep 10
 
             # Start application
-            $SUDO docker run -d \
+            dk run -d \
               --name hotelbay-app \
               --network hotelbay-net \
               --restart unless-stopped \

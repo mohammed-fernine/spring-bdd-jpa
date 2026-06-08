@@ -2,14 +2,13 @@
 
 A Spring Boot RESTful API for hotel management, built with Spring Data JPA, PostgreSQL, and tested using BDD with Cucumber.
 
-## Final Version Summary
+## Project summary
 
-- **CI/CD**: GitHub Actions builds, tests, builds Docker image, pushes to Docker Hub, and deploys via SSH to the university server.
-- **Trigger**: On push to `main` or `master` branches.
-- **Deploy target**: `deves.xdi.uevora.pt` (configurable), app exposed on port `8080` by default.
-- **Secrets/Variables**: All credentials and ports are parameterized via GitHub Secrets and Variables (see tables below).
-- **Tests**: Cucumber BDD on H2 in-memory DB with the `test` profile.
-- **Docker**: Multi-stage Dockerfile; local development via Docker Compose.
+- Built with Spring Boot 3.2 and Java 17.
+- Uses PostgreSQL in prod and H2 for tests.
+- Dockerfile for the app and a simple docker-compose for local run.
+- CI/CD with GitHub Actions: build, test, build Docker image, push to Docker Hub, then deploy over SSH to the server.
+- Triggers on push to `main` or `master`.
 
 ## Technology Stack
 
@@ -133,9 +132,9 @@ The `Dockerfile` uses a **multi-stage build**:
 1. **Build stage** (`maven:3.9-eclipse-temurin-17`) — compiles the source code and packages it into a JAR
 2. **Runtime stage** (`eclipse-temurin:17-jre`) — runs the application with a minimal JRE image (~300MB vs ~800MB with full JDK)
 
-## CI/CD Pipeline
+## CI/CD Pipeline (short)
 
-The project includes a fully automated CI/CD pipeline implemented with **GitHub Actions**, defined in `.github/workflows/ci-cd.yml`. The pipeline is triggered on every push to the `main` or `master` branches.
+There is a workflow in `.github/workflows/ci-cd.yml`. On push to `main` or `master` it will run all steps automatically.
 
 ### Pipeline Stages
 
@@ -166,39 +165,33 @@ Push to main → Build & Test → Build & Publish Docker Image → Deploy to Ser
 - Creates a Docker network (`hotelbay-net`)
 - Starts PostgreSQL and the application containers with `--restart unless-stopped`
 
-### Pipeline Configuration
+### Pipeline Configuration (what you need to set)
 
 The pipeline is fully parameterized using **GitHub Repository Secrets** and **Variables**.
 
 #### Required Secrets (Settings → Secrets and variables → Actions)
 
-| Secret | Description |
-|--------|-------------|
-| `DOCKERHUB_USERNAME` | Docker Hub username |
-| `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `DEPLOY_USER` | SSH username for the deployment server |
-| `DEPLOY_PASSWORD` | SSH password for the deployment server |
-| `DB_PASSWORD` | Database password used in production |
+- `DOCKERHUB_USERNAME` — Docker Hub username
+- `DOCKERHUB_TOKEN` — Docker Hub token
+- `DEPLOY_USER` — SSH username (e.g., mohammed.fernine)
+- `DEPLOY_PASSWORD` — SSH password
+- `DB_PASSWORD` — Postgres password used in deploy
 
 #### Optional Variables (Settings → Secrets and variables → Actions → Variables)
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DEPLOY_HOST` | `deves.xdi.uevora.pt` | Deployment server hostname |
-| `DEPLOY_PORT` | `22` | SSH port of the deployment server |
-| `APP_PORT` | `8080` | Port to expose the application on the server |
-| `DB_NAME` | `hotelbay` | PostgreSQL database name |
-| `DB_USER` | `postgres` | PostgreSQL username |
+- `DEPLOY_HOST` — default `deves.xdi.uevora.pt`
+- `DEPLOY_PORT` — default `22`
+- `APP_PORT` — default `8080`
+- `DB_NAME` — default `hotelbay`
+- `DB_USER` — default `postgres`
 
 ### How to Configure the Pipeline
 
-1. **Create a Docker Hub account** at [hub.docker.com](https://hub.docker.com)
-2. **Create a public repository** on Docker Hub named `hotelbay`
-3. **Generate a Docker Hub access token:** Account Settings → Security → New Access Token
-4. **Add all secrets** to the GitHub repository under Settings → Secrets and variables → Actions
-5. **Push to main or master** — the pipeline runs automatically
+- Make a public Docker Hub repo called `hotelbay` (or use your own name, just update the image in the workflow if you change it).
+- Add the secrets shown above to the GitHub repo.
+- Push to `main` or `master` and the pipeline will do the rest.
 
-Note: If your Docker Hub repository is private, ensure `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` are set; the pipeline performs a Docker login on the remote host before pulling the image.
+Note: If your Docker Hub repo is private, keep `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` set so the remote can pull the image.
 
 ### Design Decisions
 
